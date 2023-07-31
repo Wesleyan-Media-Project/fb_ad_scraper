@@ -3,8 +3,6 @@
 
 library(dplyr)
 library(RMySQL)
-library(readr)
-library(bigrquery)
 
 ## open a connection to the MySQL server
 ## this is on wesmedia3
