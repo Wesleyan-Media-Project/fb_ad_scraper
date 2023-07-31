@@ -1,3 +1,6 @@
+## run with the following command:
+## nohup R CMD BATCH --no-save --no-restore insert_ad_ids_into_queue.R  ./Logs/insert_ad_ids_$(date +%Y-%m-%d).txt &
+
 library(dplyr)
 library(RMySQL)
 library(readr)
