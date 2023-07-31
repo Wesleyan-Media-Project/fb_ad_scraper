@@ -1,21 +1,62 @@
 # fb_ad_scraper
 Files associated with the pipeline for scraping Facebook ads
 
+## Background
+
+The purpose of this repository is to provide the scripts that replicate the workflow used by the Wesleyan Media Project to collect the media (images and video) from Facebook ads. This workflow relies on having an access token from the FB Ad Library API. For a description of steps that you need to undertake to be approved for access to the API, please read the API documentation at this [page](https://www.facebook.com/ads/library/api/?source=nav-header)
+
+If your goal is to download the media from a small batch of Facebook political ads and you do not have the access token, please use the `FBAdLibrarian` R package written by Michael Bossetta and Rasmus Schmoekel [GitHub link](https://github.com/schmokel/FBAdLibrarian)
+
+Note that in either case you will need to have the metadata - the `ad_shortcut_url` field from the ad record, - as a starting point.
+
+## SQL Backend
+
+Please run the SQL statements from the `table_setup.sql` file to create the necessary tables. After you run the statemnets, you will have three new tables:
+
+* `ad_queue` - stores the ad id, its page id, and the date when the ad was placed into the queue. The date is used to prioratize more recent ads over the older ads.
+* `fb_ads_media` - stores the information about the media: the filenames of the images or videos downloaded from the ad, the byte size of the file, duration of an audio file extracted from the video, dimensions of an image as "width x height", page_id, ad_id, all urls that were present in the ad, and the checksum of the media file. The checksum, along with the media asset url, help us identify duplicates.
+* `fb_scrape_msg` - table to store error messages. If an ad triggered an error, there will be a message written into this table.
+
+## Directories to store the files
+
+When run continuously, the script will generate a lot of files. For this reason, we separate the files on the basis of the media type and also by month of when the files were downloaded. Without this, the number of files can become so large that it will substantially slow down, or even preclude, normal operations on files (e.g. list files, or find a specific file and copy it).
+
+You will need to have the following tree of subdirectories inside the folder where you will be running the script. The `m...` folder will need to match the month and year when you are launching your scripts.
+
+AdMedia
+└── FB
+    ├── audio
+    │   ├── m07_2023
+    │   └── m08_2023
+    ├── image
+    │   ├── m07_2023
+    │   └── m08_2023
+    ├── screenshots
+    │   ├── m07_2023
+    │   └── m08_2023
+    └── video
+        ├── m07_2023
+        └── m08_2023
+
+The `m07_2023` and `m08_2023` are the examples of folders used to separate the ad media by date. For instance, if you were to run the scripts in July 2023, then the script will look for a folder named `m07_2023`. The folder is matched to the date when the script **was running**, not to the ad-related dates (e.g. ad delivery start time, ad creation time).
+
+
 ## The ad queue
-The scraper relies on a database maintained in MySQL server. This database, named `ad_media` stores information about scraped ads and also has the queue for the scraper.
 
-An ad is placed into a queue if it has not been scraped before. There are three sources for the ads:
+The scraper relies on a database maintained in MySQL server. In this repo the name of this database is `dbase1`. The tables in this database store information about scraped ads and also have the queue for the scraper.
 
-* a table in BigQuery. This functionality was introduced when we needed to scrape a large number of ads whose ids came from an outside archive.
-* table `race2020_new` in database `textsim_new` residing in MySQL server. This table contains the ads that were retrieved by the Facebook Ads API using the keyword-based search.
-* table `race2020_utf8` from the database `textsim_utf8` in MySQL server. This table (and its parent database) were created to properly handle UTF-8 encoding in the ads. The `textsim_new` database does not UTF8 collation and thus it damages the Unicode that is present in the ads (such as emoji, or accented characters). To remedy this problem without risking losing the data, we created a new database, with the UTF-8 friendly collation. A separate script `backpull` retrieves the ads from the pages whose ads were "caught" using the keyword based searches.
+An ad is placed into a queue if it has not been scraped before. The ads come from the table `race2022` that is populated by the scripts `race2022.R` and `backpull2022.R` that are described in the `fb_ads_import` [repository](https://github.com/Wesleyan-Media-Project/fb_ads_import).
 
-Sometimes we want to repeat the scraping, even though the ad has been scraped before. This happens in the scenarios when we have reasons to think that the Ad Renderer server maintained by Meta had a "bad day" and was generating transient errors. When that is the case, we use a shortcut in the script - a commented out line that ignores the three sources of ads and proceeds to work only with the ads that are already in the `ad_queue` table.
+The queue is populated by running the `insert_ad_ids_into_queue.R` script. You would run the script from the command line using the following code:
+
+```{bash}
+nohup R CMD BATCH --no-save --no-restore insert_ad_ids_into_queue.R  ./Logs/insert_ad_ids_$(date +%Y-%m-%d).txt &
+```
 
 ## The scraper
 The scraper is a Python script that uses Google Chrome in headless mode together with Selenium.
 
-As a first step, the script downloads a list of ad ids to scrape. The ids come from the `ad_queue` table in the `ad_media` database on the wesmedia3 server.
+As a first step, the script downloads a list of ad ids to scrape. The ids come from the `ad_queue` table in the `dbase1` database.
 
 The script will accept one command-line argument: `offset`. This argument controls the `offset` parameter in the query to the server. The query will retrieve 20,000 ad ids and normally the offset parameter is set to 20,000. This parameter was introduced to enable scraping by several scripts in parallel. Each script is launched in a bash file, and the difference is the offset value.
 
