@@ -4,8 +4,6 @@ Welcome! This repo is a part of the Cross-platform Election Advertising Transpar
 
 This repo is a part of the Data Collection step. You will also need the repo [fb_ads_import](https://github.com/Wesleyan-Media-Project/fb_ads_import) to run the codes.
 
-This repo is a part of the Data Collection step.
-
 ![A picture of the repo pipeline with this repo highlighted](Creative_Pipelines.png)
 
 ## Table of Contents
