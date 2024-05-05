@@ -91,7 +91,7 @@ The `m07_2023` and `m08_2023` are the examples of folders used to separate the a
 
 The scraper relies on a database maintained in a MySQL server. In this repo, the name of this database is `dbase1`. The tables in this database store information about scraped ads and also have the queue for the scraper.
 
-An ad is placed into a queue if it has not been scraped before. The ads come from the table `race2022` that is populated by the scripts `race2022.R` and `backpull2022.R` that are described in the `fb_ads_import` [repository](https://github.com/Wesleyan-Media-Project/fb_ads_import).
+An ad is placed into a queue if it has not been scraped before.
 
 The queue is populated by running the `insert_ad_ids_into_queue.R` script. You would run the script from the command line using the following code:
 
