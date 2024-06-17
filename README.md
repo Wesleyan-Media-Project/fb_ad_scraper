@@ -1,14 +1,14 @@
 # CREATIVE --- fb_ad_scraper
 
-Welcome! The main purpose of this repository is to provide the scripts that replicate the workflow used by the Wesleyan Media Project to collect the media (images and video) from Facebook ads. The scripts in this repo form a system for continuously scraping Facebook ad media and storing the results in a database.
-
-The scripts provided here are intended to help journalists, academic researchers, and others interested in the democratic process to understand how to scrape and store Facebook political ads. We believe this data could be used as a basis for political ads research. It offers rich insights into the Facebook ads. For instance, the ads can be used for cross-platform analysis that compares the advertising strategies with other platforms such as Google to identify their overlaps or discrepancies.
+Welcome! This repo provides scripts to collect ad media (images and video) from political ads on Facebook. The scripts can be used to continuously scrape Facebook ad media and store the results in a database. There are a number of interesting use cases. For instance, the ads can be scraped for cross-platform analysis to compare advertising strategies on Facebook to those of other platforms such as Google to identify their overlaps and discrepancies.
 
 This repo is a part of the [Cross-platform Election Advertising Transparency Initiative (CREATIVE)](https://www.creativewmp.com/). CREATIVE has the goal of providing the public with analysis tools for more transparency of political ads across online platforms. In particular, CREATIVE provides cross-platform integration and standardization of political ads collected from Google and Facebook. CREATIVE is a joint project of the [Wesleyan Media Project (WMP)](https://mediaproject.wesleyan.edu/) and the [privacy-tech-lab](https://privacytechlab.org/) at [Wesleyan University](https://www.wesleyan.edu).
 
-To analyze the different dimensions of political ad transparency we have developed an analysis pipeline. The scripts in this repo are part of the Data Collection Step in our pipeline.
-Before you run this repository, You will also need the data from repo [fb_ads_import](https://github.com/Wesleyan-Media-Project/fb_ads_import) to run the codes.
+To analyze the different dimensions of political ad transparency we have developed an analysis pipeline. The scripts in this repo are part of the Data Collection step in our pipeline.
+
 ![A picture of the repo pipeline with this repo highlighted](Creative_Pipelines.png)
+
+**Note**: Before you can run the scripts in this repo, you will also need the data from the [fb_ads_import repo](https://github.com/Wesleyan-Media-Project/fb_ads_import).
 
 ## Table of Contents
 
@@ -37,7 +37,7 @@ This repository contains three main scripts that are used to scrape Facebook ad 
    - The master list of all ads is stored in the `race2022` table. This table is populated by the scripts `race2022.R` and `backpull2022.R` that are available and described in the [`fb_ads_import` repository](https://github.com/Wesleyan-Media-Project/fb_ads_import)
    - Then it creates a queue (a waiting list) of the new ads that need to be processed in the `ad_queue` table. This de-duplication process ensures that only new, unscraped ads are present in the queue.
 
-   This script is run daily to keep the queue updated with the latest ads. For more information about this script, check the [ad_queue](#the-ad-queue) in the Setup Section.
+   This script is run daily to keep the queue updated with the latest ads. For more information about this script, check the [ad_queue](#the-ad-queue) in the Setup section.
 
 3. The Python script `fb_ad_scraper.py` is used to scrape the media from the ads. It continuously reads ad_ids and page_ids from the `ad_queue` table in the database. For each ad, the script uses Selenium to navigate to an ad's URL on Facebook, extracts the media elements (images, videos, audio), downloads the media locally, and saves their metadata (URL, size, duration, etc.) into the `fb_ads_media` table in the database. If any errors occur during the scraping process, the script logs messages to the `fb_scrape_msg` table for debugging purposes. For more information about this script, check the [scraper](#the-scraper) in the Setup section.
 
