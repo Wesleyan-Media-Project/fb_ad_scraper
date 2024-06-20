@@ -147,6 +147,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.env.local
+.env.*.local `
 
 # Spyder project settings
 .spyderproject
@@ -174,3 +176,10 @@ cython_debug/
 
 #API keys
 tokens.txt
+
+#local macOS files 
+.DS_Store
+.idea/
+
+#vscode 
+.vscode
