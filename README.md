@@ -45,15 +45,15 @@ This repository contains three main scripts that are used to scrape Facebook ad 
 
 ### Facebook Ad Library API
 
-Scraping ads on Facebook requires an access token from the FB Ad Library API. For a description of the steps that you need to undertake to be approved for access to the API, you can refer to [Meta's API documentation](https://www.facebook.com/ads/library/api/?source=nav-header).
+Scraping ads on Facebook requires an access token from the FB Ad Library API. For a description of the steps that you need to undertake to be approved for access to the API, you can refer to [Meta's API documentation](https://www.facebook.com/ads/library/api/?source=nav-header). The token is valid for 60 days and has to be manually renewed.
 
 If your goal is to download the media from a small batch of Facebook political ads and you do not have the access token, you can use the [`FBAdLibrarian` R package written by Michael Bossetta and Rasmus Schmoekel](https://github.com/schmokel/FBAdLibrarian).
 
-Note that in either case you will need to have the metadata --- the `ad_shortcut_url` field from the ad record --- as a starting point.
+Note that in either case you will need to have the metadata --- the `ad_shortcut_url` field from the ad record --- as a starting point. If you have followed the instructions to successfully imports the facebook ads into your MySQL database via [fb_ads_import](https://github.com/Wesleyan-Media-Project/fb_ads_imports), you will have the ads urls in your database.
 
 ### SQL Backend
 
-Please run the SQL statements from the `table_setup.sql` file to create the necessary tables. After you run the statements, you will have three new tables:
+Please run the SQL statements from the `table_setup.sql` file to create the necessary tables. Ideally, we recommend you to run the SQL statements from the same database you used for [fb_ads_import](https://github.com/Wesleyan-Media-Project/fb_ads_imports), for more information about setting up the SQL backend, you can look at this [Readme](https://github.com/Wesleyan-Media-Project/fb_ads_import?tab=readme-ov-file#sql-backend). After you run the statements, you will have three new tables:
 
 - `ad_queue`
 - `fb_ads_media`
@@ -61,7 +61,7 @@ Please run the SQL statements from the `table_setup.sql` file to create the nece
 
 ### Directories to store the files
 
-When run continuously, the script will generate a large number of files. For this reason, we order the files on the basis of the media type and also by the month and year when the files were downloaded. Without this, the number of files can become so large that it will substantially slow down, or even preclude, normal operations on files (e.g. list files, or find a specific file and copy it).
+When run continuously, the script will generate a large number of files including screenshots, videos, images and audios. For this reason, we order the files on the basis of the media type and also by the month and year when the files were downloaded. Without this, the number of files can become so large that it will substantially slow down, or even preclude, normal operations on files (e.g. list files, or find a specific file and copy it).
 
 Create the following tree of subdirectories inside the folder where you will be running the script. The `m...` folder will need to match the month and year of when you are launching your scripts. Here is an example:
 
@@ -90,7 +90,7 @@ The scraper relies on a database maintained in a MySQL server. In this repo, the
 
 An ad is placed into a queue if it has not been scraped before.
 
-The queue is populated by running the `insert_ad_ids_into_queue.R` script. You would run the script from the command line using the following code:
+The queue is populated by running the `insert_ad_ids_into_queue.R` script. To run the script from the command line, you should first change the directory in your terminal to this repository, then run the following code:
 
 ```{bash}
 nohup R CMD BATCH --no-save --no-restore insert_ad_ids_into_queue.R  ./Logs/insert_ad_ids_$(date +%Y-%m-%d).txt &
@@ -100,15 +100,51 @@ nohup R CMD BATCH --no-save --no-restore insert_ad_ids_into_queue.R  ./Logs/inse
 
 The scraper is a Python script that uses Google Chrome in headless mode together with Selenium.
 
-As a first step, the script downloads a list of ad ids to scrape. The ids come from the `ad_queue` table in the `dbase1` database.
+To run the script, first installed the required packages. You can do this by running the following command:
 
-The script will accept one command-line argument: `offset`. This argument controls the `offset` parameter in the query to the server. The query will retrieve 20,000 ad ids and normally the offset parameter is set to 20,000. This parameter was introduced to enable scraping by several scripts in parallel. Each script is launched in a bash file, and the difference is the offset value.
+```bash
+pip install sqlalchemy pymysql requests pandas numpy selenium librosa pillow
+```
 
-We have discovered that the Ad Renderer server has a limit on the number of page visits, and if we launched three scraper threads, the limit would be exceeded. Thus, we launch at most two threads.
+Second, you should install Google Chrome and the ChromeDriver that matches your Chrome version. You can install the ChromeDriver [here](https://developer.chrome.com/docs/chromedriver/downloads). After you download the ChromeDriver, you should add it to your System's PATH.
+
+For Mac and Linux users, you can do this by running the following command (Please modify the below path `~/Downloads/chromedriver` to the correct path where your downloaded ChromeDriver):
+
+```bash
+mv ~/Downloads/chromedriver /usr/local/bin/
+```
+
+Third, you should prepare the necessary directories to store the files. You can follow the instructions in the [Directories to store the files](#directories-to-store-the-files) section.
+
+Fourth, you should create a file named `tokens.txt` and put in your Facebook API token. After you have created this file, please update the script with the correct path to your `tokens.txt` file in line:
+
+```python
+with open('/data/1/wesmediafowler/projects/FB/tokens.txt', 'r') as file:
+```
+
+Fifth, update the `db_connection_str` with your actual database credentials in line:
+
+```python
+db_connection_str = 'mysql+pymysql://username:password@localhost/ad_media'
+```
+
+Finally, you can run the script by running the following command:
+
+```bash
+python3 fb_ad_media_scrape.py
+```
+
+When the script runs, it will first connect to your MySQL data base and start to download a list of ad ids to scrape. The ids come from the `ad_queue` table in your `dbase1` database if you follow the [set up](https://github.com/Wesleyan-Media-Project/fb_ads_import?tab=readme-ov-file#3-setup) from repo [fb_ads_import](https://github.com/Wesleyan-Media-Project/fb_ads_imports).
+
+The script will accept one command-line argument: `offset`. This argument controls the `offset` parameter in the query to the server. The query will retrieve 20,000 ad ids and normally the offset parameter is set to 20,000. This parameter was introduced to enable scraping by several scripts in parallel. Each script is launched in a bash file, and the difference is the offset value. For example, if you want to set the offset parameter to 20,000, you would run the script as follows:
+
+```bash
+python3 fb_ad_media_scrape.py 20000
+```
+
+We have discovered that the Facebook's Ad Renderer server has a limit on the number of page visits, and if we launched three scrapers at the same time, the limit would be exceeded. Thus, we recommend you to launch at most two scrapers at the same time.
 
 The ads are accessed through their URLs provided by the FB API. A special feature, not available to the public, is that if we add the access token to the URL, we are shown a page that contains only one ad, and no other information. This is a different behavior from the public access --- entering an ad URL leads to a redirect to the page that shows several ads from the same page.
-
-The access token is stored in a separate file on the server, so that there is one central copy of the token. The token is generated through Meta's Graph API Explorer console <https://developers.facebook.com/tools/explorer>. The token is valid for 60 days and has to be manually renewed.
 
 ## 3. Thank You
 
