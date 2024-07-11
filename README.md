@@ -49,7 +49,7 @@ Scraping ads on Facebook requires an access token from the FB Ad Library API. Fo
 
 If your goal is to download the media from a small batch of Facebook political ads and you do not have the access token, you can use the [`FBAdLibrarian` R package written by Michael Bossetta and Rasmus Schmoekel](https://github.com/schmokel/FBAdLibrarian).
 
-Note that in either case, you will need to have the metadata --- the `ad_shortcut_url` field from the ad record --- as a starting point. If you have followed the instructions to successfully import the facebook ads into your MySQL database via [fb_ads_import](https://github.com/Wesleyan-Media-Project/fb_ads_imports), you will have the ads URLs in your database.
+Note that in either case, you will need to have the metadata --- the `ad_shortcut_url` field from the ad record --- as a starting point. You can find this field in the header of each ad when you search them in the [Facebook Ads Liabray](https://www.facebook.com/ads/library).
 
 ### SQL Backend
 
@@ -144,7 +144,7 @@ python3 fb_ad_media_scrape.py 20000
 
 We have discovered that Facebook's Ad Renderer server has a limit on the number of page visits, and if we launched three scrapers at the same time, the limit would be exceeded. Thus, we recommend you launch at most two scrapers at the same time.
 
-The ads are accessed through their URLs provided by the FB API. A special feature, not available to the public, is that if we add the access token to the URL, we are shown a page that contains only one ad, and no other information. This is a different behavior from public access --- entering an ad URL leads to a redirect to the page that shows several ads from the same page.
+The ads are accessed through their URLs provided by the FB API. A special feature, not available to the public, is that if we add the access token to the URL, we are shown a page that contains only one ad, and no other information. This is a different behavior from public access --- entering an ad URL leads to a redirect to the page that shows several ads from the same page. From the standpoint of scraping, having multiple ads per page would cause difficulty for scrapers to identify the right ad, since the web page is constructed via the React framework in JavaScript and every ad has the same class strings.
 
 ## 3. Thank You
 
